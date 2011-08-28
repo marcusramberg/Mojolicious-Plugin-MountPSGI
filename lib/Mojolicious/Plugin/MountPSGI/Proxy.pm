@@ -11,12 +11,12 @@ sub handler {
 
     $self->app(Plack::Util::load_psgi($self->home->rel_file($self->script)));
   }
- my $name = $c->param('name');
-    my $plack_env = _mojo_req_to_psgi_env($c->req);
-            $plack_env->{'MOJO.CONTROLLER'} = $c;
-            my $plack_res = $self->app->($plack_env);
-            my $mojo_res = _psgi_res_to_mojo_res($plack_res);
-            $c->tx->res($mojo_res);
+  my $name = $c->param('name');
+  my $plack_env = _mojo_req_to_psgi_env($c->req);
+  $plack_env->{'MOJO.CONTROLLER'} = $c;
+  my $plack_res = $self->app->($plack_env);
+  my $mojo_res = _psgi_res_to_mojo_res($plack_res);
+  $c->tx->res($mojo_res);
 }
 
 sub _mojo_req_to_psgi_env {
