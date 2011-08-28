@@ -17,6 +17,7 @@ sub handler {
   my $plack_res = $self->app->($plack_env);
   my $mojo_res = _psgi_res_to_mojo_res($plack_res);
   $c->tx->res($mojo_res);
+  $c->rendered;
 }
 
 sub _mojo_req_to_psgi_env {

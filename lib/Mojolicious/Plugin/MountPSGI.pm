@@ -67,4 +67,8 @@ Register plugin in L<Mojolicious> application.
 
 L<Mojolicious>, L<Mojolicious::Guides>, L<http://mojolicio.us>.
 
+=head1 Copyright
+
+Most of this module was assembled from the Mojo
+
 =cut
