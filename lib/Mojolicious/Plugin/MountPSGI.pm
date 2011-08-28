@@ -35,19 +35,22 @@ __END__
 
 =head1 NAME
 
-Mojolicious::Plugin::MountPSGI - Mojolicious Plugin
+Mojolicious::Plugin::MountPSGI - Mount PSGI apps
 
 =head1 SYNOPSIS
 
   # Mojolicious
-  $self->plugin('MountPSGI');
+  $self->plugin('MountPSGI', { '/', => 'ext/MyApp/app.psgi'});
 
   # Mojolicious::Lite
-  plugin 'MountPSGI';
+  plugin 'MountPSGI', { '/', => 'ext/MyApp/app.psgi' };
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::MountPSGI> is a L<Mojolicious> plugin.
+L<Mojolicious::Plugin::MountPSGI> lets you mount any PSGI app
+inside a Mojolicious app. For instance you could use this to
+deploy your PSGI app under hypnotoad, or to include a PSGI
+app inside a path inside your Mojo app.
 
 =head1 METHODS
 
