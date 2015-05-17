@@ -20,6 +20,12 @@ sub register {
   }
   else { $path = $prefix }
 
+  my $script = $conf->{$prefix};
+  unless (-r $script) {
+    my $abs = $app->home->rel_file($script);
+    $script = $abs if -r $abs;
+  }
+
   # Generate route
   my $route =
     $app->routes->route($path)

@@ -2,16 +2,11 @@ package Mojolicious::Plugin::MountPSGI::Proxy;
 use Mojo::Base 'Mojo';
 use Plack::Util;
 
+has app => sub { Plack::Util::load_psgi shift->script };
 has 'script';
-has 'app';
 
 sub handler {
   my ($self, $c) = @_;
-  if(!defined $self->app) {
-
-    $self->app(Plack::Util::load_psgi($self->home->rel_file($self->script)));
-  }
-  my $name = $c->param('name');
   my $plack_env = _mojo_req_to_psgi_env($c->req);
   $plack_env->{'MOJO.CONTROLLER'} = $c;
   my $plack_res = $self->app->($plack_env);
