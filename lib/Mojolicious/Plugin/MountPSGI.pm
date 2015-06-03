@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::MountPSGI::Proxy;
 
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub register {
   my ($self, $app, $conf) = @_;
@@ -20,16 +20,20 @@ sub register {
   }
   else { $path = $prefix }
 
-  my $script = $conf->{$prefix};
-  unless (-r $script) {
-    my $abs = $app->home->rel_file($script);
-    $script = $abs if -r $abs;
+  my $proxy;
+  my $psgi = $conf->{$prefix};
+  if (ref $psgi) {
+    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(app => $psgi);
+  } else {
+    unless (-r $psgi) {
+      my $abs = $app->home->rel_file($psgi);
+      $psgi = $abs if -r $abs;
+    }
+    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(script => $psgi);
   }
 
   # Generate route
-  my $route =
-    $app->routes->route($path)
-    ->detour(app => Mojolicious::Plugin::MountPSGI::Proxy->new(script=>$conf->{$prefix}));
+  my $route = $app->routes->route($path)->detour(app => $proxy);
   $route->over(host => $host) if $host;
 
   return $route;
@@ -58,6 +62,10 @@ inside a Mojolicious app. For instance you could use this to
 deploy your PSGI app under hypnotoad, or to include a PSGI
 app inside a path inside your Mojo app.
 
+The key given is the route under which to mount the app. The
+value is either a PSGI application or a string which resolves
+to an instance via L<Plack::Util/load_psgi>.
+
 =head1 METHODS
 
 L<Mojolicious::Plugin::MountPSGI> inherits all methods from
@@ -79,7 +87,7 @@ Most of this module was assembled from the Mojo mount plugin and the
 Mojolicious-Plugin-PlackMiddleware plugin. Copyright on that code belongs
 to the authors.
 
-The remainder is (C) 2011 Marcus Ramberg
+The remainder is (C) 2011-2015 Marcus Ramberg
 
 =head1 LICENSE
 
