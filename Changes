@@ -1,3 +1,5 @@
+0.03    2015-06-03 14:30:00
+        - Fix psgi app location when plugin is installed
 0.02    2014-04-04 15:31:00
         - Fix dependency on Plack
 0.01    2010-08-29 17:28:00
