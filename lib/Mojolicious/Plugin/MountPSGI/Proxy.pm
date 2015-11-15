@@ -9,10 +9,38 @@ sub handler {
   my ($self, $c) = @_;
   my $plack_env = _mojo_req_to_psgi_env($c->req);
   $plack_env->{'MOJO.CONTROLLER'} = $c;
-  my $plack_res = $self->app->($plack_env);
-  my $mojo_res = _psgi_res_to_mojo_res($plack_res);
-  $c->tx->res($mojo_res);
-  $c->rendered;
+  my $plack_res = Plack::Util::run_app $self->app, $plack_env;
+
+  # simple (array reference) response
+  if (ref $plack_res eq 'ARRAY') {
+    my ($mojo_res, undef) = _psgi_res_to_mojo_res($plack_res);
+    $c->tx->res($mojo_res);
+    $c->rendered;
+    return;
+  }
+
+  # PSGI responses must be ARRAY or CODE
+  die 'PSGI response not understood'
+    unless ref $plack_res eq 'CODE';
+
+  # delayed (code reference) response
+  my $responder = sub {
+    my $plack_res = shift;
+    my ($mojo_res, $streaming) = _psgi_res_to_mojo_res($plack_res);
+    $c->tx->res($mojo_res);
+
+    return $c->rendered unless $streaming;
+
+    # streaming response, possibly chunked
+    my $chunked = $mojo_res->content->is_chunked;
+    my $write = $chunked ? sub { $c->write_chunk(@_) } : sub { $c->write(@_) };
+    $write->(); # finalize header response
+    return Plack::Util::inline_object(
+      write => $write,
+      close => sub { $c->finish(@_) }
+    );
+  };
+  $plack_res->($responder);
 }
 
 sub _mojo_req_to_psgi_env {
@@ -59,16 +87,20 @@ sub _psgi_res_to_mojo_res {
   my $psgi_res = shift;
   my $mojo_res = Mojo::Message::Response->new;
   $mojo_res->code($psgi_res->[0]);
-  my $headers = $mojo_res->headers;
-  while (scalar @{$psgi_res->[1]}) {
-    $headers->header(shift @{$psgi_res->[1]} => shift @{$psgi_res->[1]});
-  }
 
+  my $headers = $mojo_res->headers;
+  Plack::Util::header_iter $psgi_res->[1] => sub { $headers->header(@_) };
   $headers->remove('Content-Length'); # should be set by mojolicious later
 
-  my $asset = $mojo_res->content->asset;
-  Plack::Util::foreach($psgi_res->[2], sub {$asset->add_chunk($_[0])});
-  return $mojo_res;
+  my $streaming = 0;
+  if (@$psgi_res == 3) {
+    my $asset = $mojo_res->content->asset;
+    Plack::Util::foreach($psgi_res->[2], sub {$asset->add_chunk($_[0])});
+  } else {
+    $streaming = 1;
+  }
+
+  return ($mojo_res, $streaming);
 }
 
 package Mojolicious::Plugin::MountPSGI::_PSGIInput;

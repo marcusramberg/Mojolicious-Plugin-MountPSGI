@@ -6,7 +6,7 @@ use Test::More tests => 3;
 use Mojolicious::Lite;
 use Test::Mojo;
 
-plugin 'MountPSGI', { '/' => 't/script/basic.psgi' };
+plugin 'MountPSGI', { '/' => 't/script/delayed.psgi' };
 
 
 my $t = Test::Mojo->new;
