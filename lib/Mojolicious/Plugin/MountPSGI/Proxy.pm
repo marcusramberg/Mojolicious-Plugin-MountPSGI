@@ -27,13 +27,18 @@ sub handler {
   my $responder = sub {
     my $plack_res = shift;
     my ($mojo_res, $streaming) = _psgi_res_to_mojo_res($plack_res);
-    unless ($streaming) {
-      $c->tx->res($mojo_res);
-      $c->rendered;
-      return;
-    }
+    $c->tx->res($mojo_res);
 
-    die 'Streaming response not yet supported';
+    return $c->rendered unless $streaming;
+
+    # streaming response, possibly chunked
+    my $chunked = 'chunked' eq lc($c->res->headers->transfer_encoding || '');
+    my $write = $chunked ? sub { $c->write_chunk(@_) } : sub { $c->write(@_) };
+    $write->(); # finalize header response
+    return Plack::Util::inline_object(
+      write => $write,
+      close => sub { $c->finish(@_) }
+    );
   };
   $plack_res->($responder);
 }
@@ -73,8 +78,7 @@ sub _mojo_req_to_psgi_env {
     'psgi.multithread'  => Plack::Util::FALSE,
     'psgi.multiprocess' => Plack::Util::TRUE,
     'psgi.run_once'     => Plack::Util::FALSE,
-    # 'psgi.streaming'    => Plack::Util::TRUE,
-    'psgi.streaming'    => Plack::Util::FALSE,
+    'psgi.streaming'    => Plack::Util::TRUE,
     'psgi.nonblocking'  => Plack::Util::FALSE,
   };
 }
