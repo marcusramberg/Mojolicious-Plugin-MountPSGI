@@ -32,7 +32,7 @@ sub handler {
     return $c->rendered unless $streaming;
 
     # streaming response, possibly chunked
-    my $chunked = 'chunked' eq lc($c->res->headers->transfer_encoding || '');
+    my $chunked = $mojo_res->content->is_chunked;
     my $write = $chunked ? sub { $c->write_chunk(@_) } : sub { $c->write(@_) };
     $write->(); # finalize header response
     return Plack::Util::inline_object(
@@ -87,20 +87,19 @@ sub _psgi_res_to_mojo_res {
   my $psgi_res = shift;
   my $mojo_res = Mojo::Message::Response->new;
   $mojo_res->code($psgi_res->[0]);
+
   my $headers = $mojo_res->headers;
-  while (scalar @{$psgi_res->[1]}) {
-    $headers->header(shift @{$psgi_res->[1]} => shift @{$psgi_res->[1]});
-  }
-
+  Plack::Util::header_iter $psgi_res->[1] => sub { $headers->header(@_) };
   $headers->remove('Content-Length'); # should be set by mojolicious later
-  my $streaming = 0;
 
+  my $streaming = 0;
   if (@$psgi_res == 3) {
     my $asset = $mojo_res->content->asset;
     Plack::Util::foreach($psgi_res->[2], sub {$asset->add_chunk($_[0])});
   } else {
     $streaming = 1;
   }
+
   return ($mojo_res, $streaming);
 }
 
