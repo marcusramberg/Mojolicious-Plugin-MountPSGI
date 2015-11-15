@@ -9,10 +9,33 @@ sub handler {
   my ($self, $c) = @_;
   my $plack_env = _mojo_req_to_psgi_env($c->req);
   $plack_env->{'MOJO.CONTROLLER'} = $c;
-  my $plack_res = $self->app->($plack_env);
-  my $mojo_res = _psgi_res_to_mojo_res($plack_res);
-  $c->tx->res($mojo_res);
-  $c->rendered;
+  my $plack_res = Plack::Util::run_app $self->app, $plack_env;
+
+  # simple (array reference) response
+  if (ref $plack_res eq 'ARRAY') {
+    my ($mojo_res, undef) = _psgi_res_to_mojo_res($plack_res);
+    $c->tx->res($mojo_res);
+    $c->rendered;
+    return;
+  }
+
+  # PSGI responses must be ARRAY or CODE
+  die 'PSGI response not understood'
+    unless ref $plack_res eq 'CODE';
+
+  # delayed (code reference) response
+  my $responder = sub {
+    my $plack_res = shift;
+    my ($mojo_res, $streaming) = _psgi_res_to_mojo_res($plack_res);
+    unless ($streaming) {
+      $c->tx->res($mojo_res);
+      $c->rendered;
+      return;
+    }
+
+    die 'Streaming response not yet supported';
+  };
+  $plack_res->($responder);
 }
 
 sub _mojo_req_to_psgi_env {
@@ -50,7 +73,8 @@ sub _mojo_req_to_psgi_env {
     'psgi.multithread'  => Plack::Util::FALSE,
     'psgi.multiprocess' => Plack::Util::TRUE,
     'psgi.run_once'     => Plack::Util::FALSE,
-    'psgi.streaming'    => Plack::Util::TRUE,
+    # 'psgi.streaming'    => Plack::Util::TRUE,
+    'psgi.streaming'    => Plack::Util::FALSE,
     'psgi.nonblocking'  => Plack::Util::FALSE,
   };
 }
@@ -65,10 +89,15 @@ sub _psgi_res_to_mojo_res {
   }
 
   $headers->remove('Content-Length'); # should be set by mojolicious later
+  my $streaming = 0;
 
-  my $asset = $mojo_res->content->asset;
-  Plack::Util::foreach($psgi_res->[2], sub {$asset->add_chunk($_[0])});
-  return $mojo_res;
+  if (@$psgi_res == 3) {
+    my $asset = $mojo_res->content->asset;
+    Plack::Util::foreach($psgi_res->[2], sub {$asset->add_chunk($_[0])});
+  } else {
+    $streaming = 1;
+  }
+  return ($mojo_res, $streaming);
 }
 
 package Mojolicious::Plugin::MountPSGI::_PSGIInput;
