@@ -1,3 +1,5 @@
+0.06    2015-11-16 03:00:00
+        - Fix packaging
 0.05    2015-11-15 23:00:00
         - Added handling for PSGI delayed and streaming responses
 0.04    2015-06-03 20:45:00
