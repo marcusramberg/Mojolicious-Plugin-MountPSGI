@@ -48,8 +48,8 @@ sub _mojo_req_to_psgi_env {
   my $mojo_req = shift;
   my $url = $mojo_req->url;
   my $base = $url->base;
-  my $body =
-  Mojolicious::Plugin::MountPSGI::_PSGIInput->new($mojo_req->body);
+  my $body = $mojo_req->body;
+  open my $input, '<', \$body or die "Cannot open handle to scalar reference: $!";
 
   my %headers = %{$mojo_req->headers->to_hash};
   for my $key (keys %headers) {
@@ -74,7 +74,7 @@ sub _mojo_req_to_psgi_env {
     'psgi.multithread'  => Plack::Util::FALSE,
     'psgi.version'      => [1,1],
     'psgi.errors'       => *STDERR,
-    'psgi.input'        => $body,
+    'psgi.input'        => $input,
     'psgi.multithread'  => Plack::Util::FALSE,
     'psgi.multiprocess' => Plack::Util::TRUE,
     'psgi.run_once'     => Plack::Util::FALSE,
@@ -103,21 +103,5 @@ sub _psgi_res_to_mojo_res {
   return ($mojo_res, $streaming);
 }
 
-package Mojolicious::Plugin::MountPSGI::_PSGIInput;
-use strict;
-use warnings;
-
-    sub new {
-        my ($class, $content) = @_;
-        return bless [$content, 0], $class;
-    }
-
-    sub read {
-        my $self = shift;
-        if ($_[0] = substr($self->[0], $self->[1], $_[1])) {
-            $self->[1] += $_[1];
-            return 1;
-        }
-    }
-
 1;
+
