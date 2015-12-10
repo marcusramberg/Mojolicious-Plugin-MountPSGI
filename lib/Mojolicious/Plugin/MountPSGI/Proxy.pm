@@ -4,10 +4,11 @@ use Plack::Util;
 
 has app => sub { Plack::Util::load_psgi shift->script };
 has 'script';
+has 'rewrite';
 
 sub handler {
   my ($self, $c) = @_;
-  my $plack_env = _mojo_req_to_psgi_env($c->req);
+  my $plack_env = _mojo_req_to_psgi_env($c->req, $self->rewrite);
   $plack_env->{'MOJO.CONTROLLER'} = $c;
   my $plack_res = Plack::Util::run_app $self->app, $plack_env;
 
@@ -44,8 +45,8 @@ sub handler {
 }
 
 sub _mojo_req_to_psgi_env {
-
   my $mojo_req = shift;
+  my $rewrite = shift;
   my $url = $mojo_req->url;
   my $base = $url->base;
   my $body = $mojo_req->body;
@@ -59,6 +60,13 @@ sub _mojo_req_to_psgi_env {
     $headers{'HTTP_'. uc $key} = $value;
   }
 
+  my $path = $url->path->to_string;
+  my $script = '';
+  if ($rewrite) {
+    $script = $rewrite if $path =~ s/\Q$rewrite//;
+    $path = "/$path" unless $path =~ m[^/];
+  }
+
   return {
     %ENV,
     %headers,
@@ -66,8 +74,8 @@ sub _mojo_req_to_psgi_env {
     'SERVER_NAME'       => $base->host,
     'SERVER_PORT'       => $base->port,
     'REQUEST_METHOD'    => $mojo_req->method,
-    'SCRIPT_NAME'       => '',
-    'PATH_INFO'         => $url->path->to_string,
+    'SCRIPT_NAME'       => $script,
+    'PATH_INFO'         => $path,
     'REQUEST_URI'       => $url->to_string,
     'QUERY_STRING'      => $url->query->to_string,
     'psgi.url_scheme'   => $base->scheme,

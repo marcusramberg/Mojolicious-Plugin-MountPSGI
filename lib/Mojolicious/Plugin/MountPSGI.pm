@@ -3,10 +3,12 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::MountPSGI::Proxy;
 
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 sub register {
   my ($self, $app, $conf) = @_;
+
+  my $rewrite = delete $conf->{rewrite};
 
   # Extract host and path
   my $prefix = (keys %$conf)[0];
@@ -20,16 +22,18 @@ sub register {
   }
   else { $path = $prefix }
 
+  $rewrite = $rewrite ? $path : undef;
+
   my $proxy;
   my $psgi = $conf->{$prefix};
   if (ref $psgi) {
-    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(app => $psgi);
+    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(app => $psgi, rewrite => $rewrite);
   } else {
     unless (-r $psgi) {
       my $abs = $app->home->rel_file($psgi);
       $psgi = $abs if -r $abs;
     }
-    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(script => $psgi);
+    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(script => $psgi, rewrite => $rewrite);
   }
 
   # Generate route
@@ -50,10 +54,14 @@ Mojolicious::Plugin::MountPSGI - Mount PSGI apps
 =head1 SYNOPSIS
 
   # Mojolicious
-  $self->plugin('MountPSGI', { '/', => 'ext/MyApp/app.psgi'});
+  $self->plugin('MountPSGI', { '/' => 'ext/MyApp/app.psgi'});
 
   # Mojolicious::Lite
-  plugin 'MountPSGI', { '/', => 'ext/MyApp/app.psgi' };
+  plugin 'MountPSGI', { '/' => 'ext/MyApp/app.psgi' };
+
+  # rewrite the path so the psgi app doesn't see the mount point
+  # thus app.psgi sees / when /mount is visited
+  plugin 'MountPSGI, { '/mount' => 'ext/MyApp/app.psgi', rewrite => 1 };
 
 =head1 DESCRIPTION
 
@@ -65,6 +73,11 @@ app inside a path inside your Mojo app.
 The key given is the route under which to mount the app. The
 value is either a PSGI application or a string which resolves
 to an instance via L<Plack::Util/load_psgi>.
+
+One additional option is C<rewrite> which if set to a true value
+will rewrite the C<PATH_INFO> and C<SCRIPT_NAME> values in the env
+hash so that the application does not see the mount point in
+its request path. This uses the mechanism as described by L<Plack::App::URLMap>.
 
 =head1 METHODS
 
@@ -80,6 +93,14 @@ Register plugin in L<Mojolicious> application.
 =head1 SEE ALSO
 
 L<Mojolicious>, L<Mojolicious::Guides>, L<http://mojolicio.us>.
+
+=head1 CONTRIBUTORS
+
+=over 2
+
+Joel Berger
+
+=back
 
 =head1 COPYRIGHT
 
