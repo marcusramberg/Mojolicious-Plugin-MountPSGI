@@ -15,7 +15,9 @@ subtest 'trivial mount' => sub {
 
   $t->post_ok('/' => {'Content-Type' => 'text/plain'} => 'hello')
     ->status_is(200)
+    ->json_hasnt('/HTTP_CONTENT_LENGTH')
     ->json_is('/CONTENT_LENGTH' => 5)
+    ->json_hasnt('/HTTP_CONTENT_TYPE')
     ->json_is('/CONTENT_TYPE' => 'text/plain');
 };
 

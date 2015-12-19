@@ -63,7 +63,7 @@ sub _mojo_req_to_psgi_env {
   # certain headers get their own psgi slot too
   for my $key (qw/CONTENT_LENGTH CONTENT_TYPE/) {
     next unless exists $headers{"HTTP_$key"};
-    $headers{$key} = $headers{"HTTP_$key"};
+    $headers{$key} = delete $headers{"HTTP_$key"};
   }
 
   my $path = $url->path->to_string;
