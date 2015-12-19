@@ -60,7 +60,7 @@ sub _mojo_req_to_psgi_env {
     $headers{'HTTP_'. uc $key} = $value;
   }
 
-  # certain headers get their own psgi slot too
+  # certain headers get their own psgi slot 
   for my $key (qw/CONTENT_LENGTH CONTENT_TYPE/) {
     next unless exists $headers{"HTTP_$key"};
     $headers{$key} = delete $headers{"HTTP_$key"};
