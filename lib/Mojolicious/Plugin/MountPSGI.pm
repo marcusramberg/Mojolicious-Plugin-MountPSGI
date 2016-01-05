@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::MountPSGI::Proxy;
 
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 sub register {
   my ($self, $app, $conf) = @_;
