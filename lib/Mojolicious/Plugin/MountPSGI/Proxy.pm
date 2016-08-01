@@ -56,7 +56,7 @@ sub _mojo_req_to_psgi_env {
   for my $key (keys %headers) {
     my $value = $headers{$key};
     delete $headers{$key};
-    $key =~ s{-}{_};
+    $key =~ s{-}{_}g;
     $headers{'HTTP_'. uc $key} = $value;
   }
 
