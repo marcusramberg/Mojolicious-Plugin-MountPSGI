@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::MountPSGI::Proxy;
 
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 sub register {
   my ($self, $app, $conf) = @_;
@@ -46,6 +46,8 @@ sub register {
 
 1;
 __END__
+
+=encoding utf8
 
 =head1 NAME
 
@@ -98,7 +100,9 @@ L<Mojolicious>, L<Mojolicious::Guides>, L<http://mojolicio.us>.
 
 =over 2
 
-Joel Berger
+Joel Berger (jberger)
+
+Peter Valdemar Mørch (pmorch)
 
 =back
 
@@ -108,7 +112,7 @@ Most of this module was assembled from the Mojo mount plugin and the
 Mojolicious-Plugin-PlackMiddleware plugin. Copyright on that code belongs
 to the authors.
 
-The remainder is (C) 2011-2015 Marcus Ramberg
+The remainder is (C) 2011-2015 Marcus Ramberg and the C</CONTRIBUTORS> above.
 
 =head1 LICENSE
 
