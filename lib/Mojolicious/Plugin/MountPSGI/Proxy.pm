@@ -8,7 +8,7 @@ has 'rewrite';
 
 sub handler {
   my ($self, $c) = @_;
-  my $plack_env = _mojo_req_to_psgi_env($c->req, $self->rewrite);
+  my $plack_env = _mojo_req_to_psgi_env($c, $self->rewrite);
   $plack_env->{'MOJO.CONTROLLER'} = $c;
   my $plack_res = Plack::Util::run_app $self->app, $plack_env;
 
@@ -45,8 +45,10 @@ sub handler {
 }
 
 sub _mojo_req_to_psgi_env {
-  my $mojo_req = shift;
+  my $c = shift;
   my $rewrite = shift;
+  my $mojo_tx = $c->tx;
+  my $mojo_req = $c->req;
   my $url = $mojo_req->url;
   my $base = $url->base;
   my $body = $mojo_req->body;
@@ -76,6 +78,9 @@ sub _mojo_req_to_psgi_env {
   return {
     %ENV,
     %headers,
+    'REMOTE_ADDR'       => $mojo_tx->remote_address,
+    'REMOTE_HOST'       => $mojo_tx->remote_address,
+    'REMOTE_PORT'       => $mojo_tx->remote_port,
     'SERVER_PROTOCOL'   => 'HTTP/'. $mojo_req->version,
     'SERVER_NAME'       => $base->host,
     'SERVER_PORT'       => $base->port,
