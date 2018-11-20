@@ -63,7 +63,7 @@ Mojolicious::Plugin::MountPSGI - Mount PSGI apps
 
   # rewrite the path so the psgi app doesn't see the mount point
   # thus app.psgi sees / when /mount is visited
-  plugin 'MountPSGI, { '/mount' => 'ext/MyApp/app.psgi', rewrite => 1 };
+  plugin 'MountPSGI', { '/mount' => 'ext/MyApp/app.psgi', rewrite => 1 };
 
 =head1 DESCRIPTION
 
