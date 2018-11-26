@@ -26,6 +26,10 @@ sub register {
     rewrite => $rewrite ? $path : undef,
   );
 
+  unless ($ENV{PLACK_ENV}) {
+    $args{mode} = $app->mode;
+  }
+
   my $psgi = $conf->{$prefix};
   if (ref $psgi) {
     $args{app} = $psgi;
@@ -93,6 +97,12 @@ L<performance|https://github.com/marcusramberg/Mojolicious-Plugin-MountPSGI/issu
 There has been discussion about L<"adding proxying
 primatives"|https://github.com/mojolicious/mojo/issues/1295> to Mojolicious
 which would likely be useful in resolving this performance hit.
+
+If C<PLACK_ENV> is not otherwise set, the L<Mojolicious/mode> will be used
+while loading the application script and during synchronous responses. For
+delayed responses, the plugin cannot ensure that it will be set. Applications
+should fetch their C<PLACK_ENV> before requesting a delayed response and manage
+it appropriately.
 
 =head1 METHODS
 

@@ -2,12 +2,19 @@ package Mojolicious::Plugin::MountPSGI::Proxy;
 use Mojo::Base 'Mojolicious';
 use Plack::Util;
 
-has app => sub { Plack::Util::load_psgi shift->script };
+has app => sub {
+  my $self = shift;
+  local $ENV{PLACK_ENV} = $self->mode;
+  Plack::Util::load_psgi $self->script;
+};
+has mode => sub { $ENV{PLACK_ENV} || 'development' };
 has 'script';
 has 'rewrite';
 
 sub handler {
   my ($self, $c) = @_;
+  local $ENV{PLACK_ENV} = $self->mode;
+
   my $plack_env = _mojo_req_to_psgi_env($c, $self->rewrite);
   $plack_env->{'MOJO.CONTROLLER'} = $c;
   my $plack_res = Plack::Util::run_app $self->app, $plack_env;
@@ -24,6 +31,7 @@ sub handler {
   die 'PSGI response not understood'
     unless ref $plack_res eq 'CODE';
 
+  #TODO do something with $self->mode in delayed response
   # delayed (code reference) response
   my $responder = sub {
     my $plack_res = shift;
