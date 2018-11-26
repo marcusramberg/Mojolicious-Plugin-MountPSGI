@@ -22,19 +22,22 @@ sub register {
   }
   else { $path = $prefix }
 
-  $rewrite = $rewrite ? $path : undef;
+  my %args = (
+    rewrite => $rewrite ? $path : undef,
+  );
 
-  my $proxy;
   my $psgi = $conf->{$prefix};
   if (ref $psgi) {
-    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(app => $psgi, rewrite => $rewrite);
+    $args{app} = $psgi;
   } else {
     unless (-r $psgi) {
       my $abs = $app->home->rel_file($psgi);
       $psgi = $abs if -r $abs;
     }
-    $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(script => $psgi, rewrite => $rewrite);
+    $args{script} = $psgi;
   }
+
+  my $proxy = Mojolicious::Plugin::MountPSGI::Proxy->new(%args);
 
   # Generate route
   my $route = $app->routes->route($path)->detour(app => $proxy);
