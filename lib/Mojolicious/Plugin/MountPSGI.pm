@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojolicious::Plugin::MountPSGI::Proxy;
 
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 sub register {
   my ($self, $app, $conf) = @_;
@@ -126,6 +126,8 @@ L<Mojolicious>, L<Mojolicious::Guides>, L<http://mojolicio.us>.
 Joel Berger (jberger)
 
 Peter Valdemar Mørch (pmorch)
+
+Graham Knop (haarg)
 
 =back
 
