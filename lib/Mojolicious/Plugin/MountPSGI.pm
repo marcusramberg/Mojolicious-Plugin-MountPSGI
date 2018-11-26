@@ -81,6 +81,16 @@ will rewrite the C<PATH_INFO> and C<SCRIPT_NAME> values in the env
 hash so that the application does not see the mount point in
 its request path. This uses the mechanism as described by L<Plack::App::URLMap>.
 
+=head1 CAVEATS
+
+Due to the way Mojolicious parses multipart requests, the original request body
+is not available to pass to the PSGI application. As a stopgap measure this
+plugin rebuilds the request from its parts at what is likely a huge cost in
+L<performance|https://github.com/marcusramberg/Mojolicious-Plugin-MountPSGI/issues/8>.
+There has been discussion about L<"adding proxying
+primatives"|https://github.com/mojolicious/mojo/issues/1295> to Mojolicious
+which would likely be useful in resolving this performance hit.
+
 =head1 METHODS
 
 L<Mojolicious::Plugin::MountPSGI> inherits all methods from
