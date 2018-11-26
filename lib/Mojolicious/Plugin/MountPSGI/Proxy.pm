@@ -51,7 +51,22 @@ sub _mojo_req_to_psgi_env {
   my $mojo_req = $c->req;
   my $url = $mojo_req->url;
   my $base = $url->base;
-  my $body = $mojo_req->body;
+  my $content = $mojo_req->content;
+  my $body;
+  if ($content->is_multipart) {
+    $content = $content->clone;
+    my $offset = 0;
+    while (1) {
+      my $chunk = $content->get_body_chunk($offset);
+      next unless defined $chunk;
+      my $len = length $chunk;
+      last unless $len;
+      $offset += $len;
+      $body   .= $chunk;
+    }
+  } else {
+    $body = $mojo_req->body;
+  }
   open my $input, '<', \$body or die "Cannot open handle to scalar reference: $!";
 
   my %headers = %{$mojo_req->headers->to_hash};
@@ -62,7 +77,7 @@ sub _mojo_req_to_psgi_env {
     $headers{'HTTP_'. uc $key} = $value;
   }
 
-  # certain headers get their own psgi slot 
+  # certain headers get their own psgi slot
   for my $key (qw/CONTENT_LENGTH CONTENT_TYPE/) {
     next unless exists $headers{"HTTP_$key"};
     $headers{$key} = delete $headers{"HTTP_$key"};
